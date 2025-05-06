@@ -118,9 +118,34 @@ public class Chunk {
         buffer.get(result);
         return result;
     }
+    
+    public Block getBlock(int x, int y, int z) {
+        if (x >= 0 && x < CHUNK_SIZE && y >= 0 && y < CHUNK_SIZE && z >= 0 && z < CHUNK_SIZE) {
+            return Blocks[x][y][z];
+        }
+        return null;
+    }
+
+    // Method to set a block at a specific position
+    public void setBlock(int x, int y, int z, Block block) {
+        if (x >= 0 && x < CHUNK_SIZE && y >= 0 && y < CHUNK_SIZE && z >= 0 && z < CHUNK_SIZE) {
+            Blocks[x][y][z] = block;
+
+            // Mark that the chunk needs to be rebuilt
+            needsRebuild = true;
+        }
+    }
+    
+    private boolean needsRebuild = false;
+
+    
     //method: render
     //purpose: this method will draw the chunks
     public void render() {
+        if (needsRebuild) {
+            rebuildMesh(StartX, StartY, StartZ);
+            needsRebuild = false;
+        }
         glPushMatrix();
         glBindBuffer(GL_ARRAY_BUFFER, VBOVertexHandle);
         glVertexPointer(3, GL_FLOAT, 0, 0L);
@@ -261,6 +286,16 @@ public class Chunk {
         switch (block.GetID()) {
             case 2: // Water
                 return new float[]{0.0f, 0.0f, 0.8f};
+            case 7: // Coal
+                return new float[]{0.2f, 0.2f, 0.2f};
+            case 8: // Iron
+                return new float[]{0.8f, 0.8f, 0.8f};
+            case 9: // Gold
+                return new float[]{1.0f, 0.9f, 0.0f};
+            case 10: // Diamond
+                return new float[]{0.0f, 0.8f, 0.8f};
+            case 11: // Obsidian
+                return new float[]{0.1f, 0.0f, 0.2f};
             default:
                 return new float[]{1.0f, 1.0f, 1.0f};
         }
@@ -332,6 +367,35 @@ public class Chunk {
                     // Small chance to convert surface dirt to sand
                     if (Blocks[x][y][z].GetID() == Block.BlockType.BlockType_Grass.GetID() && r.nextFloat() < 0.1f) {
                         Blocks[x][y][z] = new Block(Block.BlockType.BlockType_Sand);
+                        Blocks[x][y][z].SetActive(true);
+                    }
+                }
+            }
+        }
+        
+        for (int x = 0; x < CHUNK_SIZE; x++) {
+            for (int z = 0; z < CHUNK_SIZE; z++) {
+                for (int y = 0; y < CHUNK_SIZE; y++) {
+                    // Skip blocks that aren't stone
+                    if (Blocks[x][y][z].GetID() != Block.BlockType.BlockType_Stone.GetID()) {
+                        continue;
+                    }
+
+                    // Chance to convert stone to ores based on depth (lower = more rare ores)
+                    float oreChance = r.nextFloat();
+                    float depthFactor = (float) y / CHUNK_SIZE; // 0 at bottom, 1 at top
+
+                    if (oreChance < 0.08f) { // 8% chance for coal, more common
+                        Blocks[x][y][z] = new Block(Block.BlockType.BlockType_Coal);
+                        Blocks[x][y][z].SetActive(true);
+                    } else if (oreChance < 0.12f && depthFactor < 0.7f) { // 4% chance for iron, below 70% height
+                        Blocks[x][y][z] = new Block(Block.BlockType.BlockType_Iron);
+                        Blocks[x][y][z].SetActive(true);
+                    } else if (oreChance < 0.14f && depthFactor < 0.4f) { // 2% chance for gold, below 40% height
+                        Blocks[x][y][z] = new Block(Block.BlockType.BlockType_Gold);
+                        Blocks[x][y][z].SetActive(true);
+                    } else if (oreChance < 0.15f && depthFactor < 0.3f) { // 1% chance for diamond, below 30% height
+                        Blocks[x][y][z] = new Block(Block.BlockType.BlockType_Diamond);
                         Blocks[x][y][z].SetActive(true);
                     }
                 }
@@ -592,6 +656,179 @@ public class Chunk {
                     x + offset * 4, y + offset * 11,
                     x + offset * 5, y + offset * 11};
                 
+                
+                //Coal
+                case 7:
+                    return new float[] {
+                    // BOTTOM QUAD(DOWN=+Y)
+                    x + offset * 3, y + offset * 3,
+                    x + offset * 2, y + offset * 3,
+                    x + offset * 2, y + offset * 2,
+                    x + offset * 3, y + offset * 2,
+                    // TOP!
+                    x + offset * 3, y + offset * 3,
+                    x + offset * 2, y + offset * 3,
+                    x + offset * 2, y + offset * 2,
+                    x + offset * 3, y + offset * 2,
+                    // FRONT QUAD
+                    x + offset * 3, y + offset * 3,
+                    x + offset * 2, y + offset * 3,
+                    x + offset * 2, y + offset * 2,
+                    x + offset * 3, y + offset * 2,
+                    // BACK QUAD
+                    x + offset * 3, y + offset * 3,
+                    x + offset * 2, y + offset * 3,
+                    x + offset * 2, y + offset * 2,
+                    x + offset * 3, y + offset * 2,
+                    // LEFT QUAD
+                    x + offset * 3, y + offset * 3,
+                    x + offset * 2, y + offset * 3,
+                    x + offset * 2, y + offset * 2,
+                    x + offset * 3, y + offset * 2,
+                    // RIGHT QUAD
+                    x + offset * 3, y + offset * 3,
+                    x + offset * 2, y + offset * 3,
+                    x + offset * 2, y + offset * 2,
+                    x + offset * 3, y + offset * 2};
+                    
+                //Iron
+                case 8:
+                    return new float[] {
+                        // BOTTOM QUAD(DOWN=+Y)
+                    x + offset * 2, y + offset * 3,
+                    x + offset * 1, y + offset * 3,
+                    x + offset * 1, y + offset * 2,
+                    x + offset * 2, y + offset * 2,
+                    // TOP!
+                    x + offset * 2, y + offset * 3,
+                    x + offset * 1, y + offset * 3,
+                    x + offset * 1, y + offset * 2,
+                    x + offset * 2, y + offset * 2,
+                    // FRONT QUAD
+                    x + offset * 2, y + offset * 3,
+                    x + offset * 1, y + offset * 3,
+                    x + offset * 1, y + offset * 2,
+                    x + offset * 2, y + offset * 2,
+                    // BACK QUAD
+                    x + offset * 2, y + offset * 3,
+                    x + offset * 1, y + offset * 3,
+                    x + offset * 1, y + offset * 2,
+                    x + offset * 2, y + offset * 2,
+                    // LEFT QUAD
+                    x + offset * 2, y + offset * 3,
+                    x + offset * 1, y + offset * 3,
+                    x + offset * 1, y + offset * 2,
+                    x + offset * 2, y + offset * 2,
+                    // RIGHT QUAD
+                    x + offset * 2, y + offset * 3,
+                    x + offset * 1, y + offset * 3,
+                    x + offset * 1, y + offset * 2,
+                    x + offset * 2, y + offset * 2};
+                    
+                    
+                //Gold
+                case 9:
+                    return new float [] {
+                        // BOTTOM QUAD(DOWN=+Y)
+                    x + offset * 1, y + offset * 3,
+                    x + offset * 0, y + offset * 3,
+                    x + offset * 0, y + offset * 2,
+                    x + offset * 1, y + offset * 2,
+                    // TOP!
+                    x + offset * 1, y + offset * 3,
+                    x + offset * 0, y + offset * 3,
+                    x + offset * 0, y + offset * 2,
+                    x + offset * 1, y + offset * 2,
+                    // FRONT QUAD
+                    x + offset * 1, y + offset * 3,
+                    x + offset * 0, y + offset * 3,
+                    x + offset * 0, y + offset * 2,
+                    x + offset * 1, y + offset * 2,
+                    // BACK QUAD
+                    x + offset * 1, y + offset * 3,
+                    x + offset * 0, y + offset * 3,
+                    x + offset * 0, y + offset * 2,
+                    x + offset * 1, y + offset * 2,
+                    // LEFT QUAD
+                    x + offset * 1, y + offset * 3,
+                    x + offset * 0, y + offset * 3,
+                    x + offset * 0, y + offset * 2,
+                    x + offset * 1, y + offset * 2,
+                    // RIGHT QUAD
+                    x + offset * 1, y + offset * 3,
+                    x + offset * 0, y + offset * 3,
+                    x + offset * 0, y + offset * 2,
+                    x + offset * 1, y + offset * 2};
+                    
+                    
+                //Diamond
+                case 10:
+                    return new float [] {
+                        // BOTTOM QUAD(DOWN=+Y)
+                    x + offset * 3, y + offset * 4,
+                    x + offset * 2, y + offset * 4,
+                    x + offset * 2, y + offset * 3,
+                    x + offset * 3, y + offset * 3,
+                    // TOP!
+                    x + offset * 3, y + offset * 4,
+                    x + offset * 2, y + offset * 4,
+                    x + offset * 2, y + offset * 3,
+                    x + offset * 3, y + offset * 3,
+                    // FRONT QUAD
+                    x + offset * 3, y + offset * 4,
+                    x + offset * 2, y + offset * 4,
+                    x + offset * 2, y + offset * 3,
+                    x + offset * 3, y + offset * 3,
+                    // BACK QUAD
+                    x + offset * 3, y + offset * 4,
+                    x + offset * 2, y + offset * 4,
+                    x + offset * 2, y + offset * 3,
+                    x + offset * 3, y + offset * 3,
+                    // LEFT QUAD
+                    x + offset * 3, y + offset * 4,
+                    x + offset * 2, y + offset * 4,
+                    x + offset * 2, y + offset * 3,
+                    x + offset * 3, y + offset * 3,
+                    // RIGHT QUAD
+                    x + offset * 3, y + offset * 4,
+                    x + offset * 2, y + offset * 4,
+                    x + offset * 2, y + offset * 3,
+                    x + offset * 3, y + offset * 3};
+                    
+                    
+                //Obsidian
+                case 11:
+                    return new float[] {
+                    x + offset * 6, y + offset * 3,
+                    x + offset * 5, y + offset * 3,
+                    x + offset * 5, y + offset * 2,
+                    x + offset * 6, y + offset * 2,
+                            
+                    x + offset * 6, y + offset * 3,
+                    x + offset * 5, y + offset * 3,
+                    x + offset * 5, y + offset * 2,
+                    x + offset * 6, y + offset * 2,
+                            
+                    x + offset * 6, y + offset * 3,
+                    x + offset * 5, y + offset * 3,
+                    x + offset * 5, y + offset * 2,
+                    x + offset * 6, y + offset * 2,
+                            
+                    x + offset * 6, y + offset * 3,
+                    x + offset * 5, y + offset * 3,
+                    x + offset * 5, y + offset * 2,
+                    x + offset * 6, y + offset * 2,
+                            
+                    x + offset * 6, y + offset * 3,
+                    x + offset * 5, y + offset * 3,
+                    x + offset * 5, y + offset * 2,
+                    x + offset * 6, y + offset * 2,
+                            
+                    x + offset * 6, y + offset * 3,
+                    x + offset * 5, y + offset * 3,
+                    x + offset * 5, y + offset * 2,
+                    x + offset * 6, y + offset * 2};
+                    
         }
         
         return new float[] {1, 1, 1};

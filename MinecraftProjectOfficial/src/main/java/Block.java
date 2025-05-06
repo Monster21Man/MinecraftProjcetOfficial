@@ -28,7 +28,12 @@ public class Block {
         BlockType_Dirt(3),
         BlockType_Stone(4),
         BlockType_Bedrock(5),
-        BlockType_Default(6);
+        BlockType_Default(6),
+        BlockType_Coal(7),
+        BlockType_Iron(8),
+        BlockType_Gold(9),
+        BlockType_Diamond(10),
+        BlockType_Obsidian(11);
         
         private int BlockID;
         

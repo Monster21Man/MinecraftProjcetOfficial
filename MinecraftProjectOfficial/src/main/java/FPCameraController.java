@@ -32,6 +32,86 @@ import org.lwjgl.BufferUtils;
      private float yaw = 0.0f;
      private float pitch = 0.0f;
      private World world;
+     private boolean collisionDetectionEnabled = true; // Default to enabled
+     private boolean debugMode = true; // Set to true to see debug messages
+     private float playerWidth = 0.5f; // Player's "width" for collision detection
+     private float playerHeight = 1.8f;
+     
+     //method: wouldCollide
+     //purpose: This method checks if the user will collide with a block
+     private boolean wouldCollide(float newX, float newY, float newZ) {
+         // If collision detection is disabled, always return false (no collision)
+         if (!collisionDetectionEnabled) {
+             return false;
+         }
+
+         // Simple debugging output
+         if (debugMode) {
+             System.out.println("Player position: " + newX + ", " + newY + ", " + newZ);
+         }
+
+         // Convert world coordinates to chunk coordinates
+         int chunkX = (int) Math.floor(newX / (Chunk.CHUNK_SIZE * Chunk.CUBE_LENGTH));
+         int chunkZ = (int) Math.floor(newZ / (Chunk.CHUNK_SIZE * Chunk.CUBE_LENGTH));
+
+         // Check if we're outside the world
+         if (chunkX < 0 || chunkX >= World.getWorldSize() || chunkZ < 0 || chunkZ >= World.getWorldSize()) {
+             if (debugMode) {
+                 System.out.println("Outside world bounds");
+             }
+             return true; // Collision with world boundary
+         }
+
+         // Get the chunk
+         Chunk chunk = world.getChunk(chunkX, chunkZ);
+         if (chunk == null) {
+             if (debugMode) {
+                 System.out.println("Chunk is null");
+             }
+             return false; // No chunk, no collision
+         }
+
+         // Calculate block coordinates within the chunk
+         // Note: Adjusting for your coordinate system - may need modification
+         float relativeX = newX - (chunkX * Chunk.CHUNK_SIZE * Chunk.CUBE_LENGTH);
+         float relativeZ = newZ - (chunkZ * Chunk.CHUNK_SIZE * Chunk.CUBE_LENGTH);
+
+         int blockX = (int) (relativeX / Chunk.CUBE_LENGTH);
+         // Adjust Y coordinate based on your system
+         int blockY = (int) ((newY + (Chunk.CHUNK_SIZE * 0.8f)) / Chunk.CUBE_LENGTH);         int blockZ = (int) (relativeZ / Chunk.CUBE_LENGTH);
+
+         // Ensure block coordinates are valid
+         if (blockX < 0 || blockX >= Chunk.CHUNK_SIZE
+                 || blockY < 0 || blockY >= Chunk.CHUNK_SIZE
+                 || blockZ < 0 || blockZ >= Chunk.CHUNK_SIZE) {
+             if (debugMode) {
+                 System.out.println("Block coordinates out of range: " + blockX + ", " + blockY + ", " + blockZ);
+             }
+             return false;
+         }
+
+         // Get the block
+         Block block = chunk.getBlock(blockX, blockY, blockZ);
+         if (block == null) {
+             if (debugMode) {
+                 System.out.println("Block is null");
+             }
+             return false;
+         }
+
+         // Check if this is a solid block
+         boolean isSolid = block.IsActive()
+                 && block.GetID() != Block.BlockType.BlockType_Default.GetID()
+                 && block.GetID() != Block.BlockType.BlockType_Water.GetID();
+
+         if (debugMode) {
+             System.out.println("Block at " + blockX + ", " + blockY + ", " + blockZ
+                     + " ID: " + block.GetID() + " Active: " + block.IsActive()
+                     + " Solid: " + isSolid);
+         }
+
+         return isSolid;
+     }
  
      //Constructor: Sets the position of the first person camera
      public FPCameraController(float x, float y, float z) {
@@ -41,6 +121,7 @@ import org.lwjgl.BufferUtils;
          lPosition.y = 15f;
          lPosition.z = 0f;
      }
+     
      //method: inizilaizeWorld
      //purpose: this method initializes our Minecraft world
      public void initializeWorld() {
@@ -64,8 +145,16 @@ import org.lwjgl.BufferUtils;
      public void walkForward(float distance) {
          float xOffset = distance * (float) Math.sin(Math.toRadians(yaw));
          float zOffset = distance * (float) Math.cos(Math.toRadians(yaw));
-         position.x -= xOffset;
-         position.z += zOffset;
+         
+         float newX = position.x - xOffset;
+         float newZ = position.z + zOffset;
+         
+         
+         if (!wouldCollide(newX, position.y, newZ)) {
+             // No collision, can move
+             position.x = newX;
+             position.z = newZ;
+         }
      }
  
      //method: walkBackwards
@@ -73,8 +162,15 @@ import org.lwjgl.BufferUtils;
      public void walkBackwards(float distance) {
          float xOffset = distance * (float) Math.sin(Math.toRadians(yaw));
          float zOffset = distance * (float) Math.cos(Math.toRadians(yaw));
-         position.x += xOffset;
-         position.z -= zOffset;
+         float newX = position.x + xOffset;
+         float newZ = position.z - zOffset;
+
+         // Check for collision
+         if (!wouldCollide(newX, position.y, newZ)) {
+             // No collision, can move
+             position.x = newX;
+             position.z = newZ;
+         }
      }
  
      //method: strafeLeft
@@ -82,8 +178,15 @@ import org.lwjgl.BufferUtils;
      public void strafeLeft(float distance) {
          float xOffset = distance * (float) Math.sin(Math.toRadians(yaw - 90));
          float zOffset = distance * (float) Math.cos(Math.toRadians(yaw - 90));
-         position.x -= xOffset;
-         position.z += zOffset;
+         float newX = position.x - xOffset;
+         float newZ = position.z + zOffset;
+
+         // Check for collision
+         if (!wouldCollide(newX, position.y, newZ)) {
+             // No collision, can move
+             position.x = newX;
+             position.z = newZ;
+         }
      }
  
      //method: strafeRight
@@ -91,20 +194,40 @@ import org.lwjgl.BufferUtils;
      public void strafeRight(float distance) {
          float xOffset = distance * (float) Math.sin(Math.toRadians(yaw + 90));
          float zOffset = distance * (float) Math.cos(Math.toRadians(yaw + 90));
-         position.x -= xOffset;
-         position.z += zOffset;
+         float newX = position.x - xOffset;
+         float newZ = position.z + zOffset;
+
+         // Check for collision
+         if (!wouldCollide(newX, position.y, newZ)) {
+             // No collision, can move
+             position.x = newX;
+             position.z = newZ;
+         }
      }
  
      //method: moveUp
      //purpose: This method controls the users ability to rise up in the 3D window
      public void moveUp(float distance) {
-         position.y -= distance;
+         // Calculate new position
+         float newY = position.y - distance;
+
+         // Check for collision
+         if (!wouldCollide(position.x, newY, position.z)) {
+             // No collision, can move
+             position.y = newY;
+         }
      }
  
      //method: moveDown
      //purpose: This method controls the users ability to sink down in the 3D window
      public void moveDown(float distance) {
-         position.y += distance;
+         float newY = position.y + distance;
+
+         // Check for collision
+         if (!wouldCollide(position.x, newY, position.z)) {
+             // No collision, can move
+             position.y = newY;
+         }
      }
  
      //method: lookThrough
@@ -143,6 +266,15 @@ import org.lwjgl.BufferUtils;
          while (!Display.isCloseRequested() && !Keyboard.isKeyDown(Keyboard.KEY_ESCAPE)&& !Keyboard.isKeyDown(Keyboard.KEY_Q)) {
              time = Sys.getTime();
              lastTime = time;
+             
+             // In your gameLoop method
+             if (Keyboard.isKeyDown(Keyboard.KEY_V) && !vKeyPressed) {
+                 collisionDetectionEnabled = !collisionDetectionEnabled;
+                 System.out.println("Collision detection: " + (collisionDetectionEnabled ? "enabled" : "disabled"));
+                 vKeyPressed = true;
+             } else if (!Keyboard.isKeyDown(Keyboard.KEY_V)) {
+                 vKeyPressed = false;
+             }
  
              dx = Mouse.getDX();
              dy = Mouse.getDY();
@@ -184,6 +316,8 @@ import org.lwjgl.BufferUtils;
  
          Display.destroy();
      }
+     
+     private boolean vKeyPressed = false;
  
      // method: render
      /*
