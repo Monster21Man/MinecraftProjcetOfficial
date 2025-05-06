@@ -52,9 +52,10 @@ public class Basic3D {
     //purpose: This method controls the initialization of the OpenGL window and begins the game loop
     public void start() {
         try {
-            createWindow();
-            initGL();
+            createWindow(); 
+           initGL();
             fp.initializeWorld();
+            fp.loadTextures();
             fp.gameLoop();
         } catch (Exception e) {
             e.printStackTrace();
@@ -82,41 +83,45 @@ public class Basic3D {
     //method: initGL
     //purpose: This method sets the background color of the window and sets it as a 3D space for the user to navigate
     private void initGL() {
-        glClearColor(135 / 255.0f, 206 / 255.0f, 235 / 255.0f, 1.0f);
+        glClearColor(135 / 255.0f, 206 / 255.0f, 235 / 255.0f, 1.0f); // Sky blue
         glMatrixMode(GL_PROJECTION);
         glLoadIdentity();
-        GLU.gluPerspective(100.0f, (float) displayMode.getWidth() / (float) displayMode.getHeight(), 0.1f, 300.0f);
+        GLU.gluPerspective(100.0f, (float) displayMode.getWidth() / (float) displayMode.getHeight(), 0.1f, Chunk.CHUNK_SIZE * World.getWorldSize() * Chunk.CUBE_LENGTH); // Adjust far clipping plane
         glMatrixMode(GL_MODELVIEW);
         glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
+
+        // Depth Testing
         glEnable(GL_DEPTH_TEST);
         glDepthFunc(GL_LEQUAL);
+
+        // Culling (Optional but good practice)
+        // glEnable(GL_CULL_FACE);
+        // glCullFace(GL_BACK);
+        // Enable client states for rendering with VBOs (as done in Chunk)
         glEnableClientState(GL_VERTEX_ARRAY);
         glEnableClientState(GL_COLOR_ARRAY);
-        glEnable(GL_TEXTURE_2D);
-        glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        /*
-            glEnable(GL_LIGHTING);
-            glEnable(GL_LIGHT0);
-            float[] lightPosition = {0, 100, 0, 1}; // Position the light above
-            glLightfv(GL_LIGHT0, GL_POSITION, lightPosition);
-            float[] lightDiffuse = {1.0f, 1.0f, 1.0f, 1.0f}; // White light
-            glLightfv(GL_LIGHT0, GL_DIFFUSE, lightDiffuse);
-        */
-        initLightArrays(); //initializes lighting and position buffers
-        glLight(GL_LIGHT0, GL_POSITION, lightPosition); // sets light position according to the position buffer
-        glLight(GL_LIGHT0, GL_SPECULAR, whiteLight); // sets specular according to lighting buffer
-        glLight(GL_LIGHT0, GL_DIFFUSE, whiteLight); // sets diffuse light according to buffer
-        glLight(GL_LIGHT0, GL_AMBIENT, whiteLight); //sets ambient lgiht according to lighting buffer
-        glEnable(GL_LIGHTING); ///enables lighting
-        glEnable(GL_LIGHT0); //enables light0
+        glEnableClientState(GL_TEXTURE_COORD_ARRAY); // Ensure this is enabled
+
+        // Texture setup
+        glEnable(GL_TEXTURE_2D); // Enable textures globally
+
+        // Blending setup (used by renderHand)
+        // We enable it here, but ensure it's disabled/enabled specifically where needed
+        // glEnable(GL_BLEND);
+        // glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        // Lighting setup
+        initLightArrays();
+        glLight(GL_LIGHT0, GL_POSITION, lightPosition);
+        glLight(GL_LIGHT0, GL_SPECULAR, whiteLight);
+        glLight(GL_LIGHT0, GL_DIFFUSE, whiteLight);
+        glLight(GL_LIGHT0, GL_AMBIENT, whiteLight);
+        glEnable(GL_LIGHTING);
+        glEnable(GL_LIGHT0);
     }
 
     //method: main
-    //purpose: This method calls for the program to begin
     public static void main(String[] args) {
         Basic3D basic = new Basic3D();
-        basic.start();
+        basic.start(); // Context is created and textures loaded within start()
     }
 }
