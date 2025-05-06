@@ -364,10 +364,50 @@ public class Chunk {
                         continue;
                     }
 
-                    // Small chance to convert surface dirt to sand
-                    if (Blocks[x][y][z].GetID() == Block.BlockType.BlockType_Grass.GetID() && r.nextFloat() < 0.1f) {
-                        Blocks[x][y][z] = new Block(Block.BlockType.BlockType_Sand);
-                        Blocks[x][y][z].SetActive(true);
+                    // Check if this is a grass block
+                    if (Blocks[x][y][z].GetID() == Block.BlockType.BlockType_Grass.GetID()) {
+                        // Check surrounding blocks for water (within a 2-block radius)
+                        boolean nearWater = false;
+
+                        // Search radius
+                        int radius = 2;
+                        for (int dx = -radius; dx <= radius && !nearWater; dx++) {
+                            for (int dz = -radius; dz <= radius && !nearWater; dz++) {
+                                // Skip if out of bounds
+                                if (x + dx < 0 || x + dx >= CHUNK_SIZE || z + dz < 0 || z + dz >= CHUNK_SIZE) {
+                                    continue;
+                                }
+
+                                // Check if there's water at the same y level or one below
+                                if (y < CHUNK_SIZE
+                                        && Blocks[x + dx][y][z + dz].GetID() == Block.BlockType.BlockType_Water.GetID()) {
+                                    nearWater = true;
+                                    break;
+                                }
+
+                                // Check one level below (for beach-like shores)
+                                if (y > 0
+                                        && Blocks[x + dx][y - 1][z + dz].GetID() == Block.BlockType.BlockType_Water.GetID()) {
+                                    nearWater = true;
+                                    break;
+                                }
+                            }
+                        }
+
+                        // If near water, convert to sand with higher probability
+                        if (nearWater) {
+                            // 70% chance to become sand if near water
+                            if (r.nextFloat() < 0.7f) {
+                                Blocks[x][y][z] = new Block(Block.BlockType.BlockType_Sand);
+                                Blocks[x][y][z].SetActive(true);
+                            }
+                        } else {
+                            // Far from water, very small chance to become sand (for isolated desert patches)
+                            if (r.nextFloat() < 0.02f) {
+                                Blocks[x][y][z] = new Block(Block.BlockType.BlockType_Sand);
+                                Blocks[x][y][z].SetActive(true);
+                            }
+                        }
                     }
                 }
             }
