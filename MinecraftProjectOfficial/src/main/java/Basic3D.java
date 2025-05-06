@@ -66,7 +66,7 @@ public class Basic3D {
     //method: createWindow
     //purpose: This method creates the actual OpenGL window and sets it boundaries
     private void createWindow() throws Exception {
-        Display.setFullscreen(false);
+        Display.setFullscreen(true);
         DisplayMode d[] = Display.getAvailableDisplayModes();
         //Uses a for loop to control the width and height of the window
         for (int i = 0; i < d.length; i++) {
