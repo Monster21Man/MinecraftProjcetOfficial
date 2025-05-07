@@ -77,7 +77,7 @@ public class FPCameraController {
     
     // Lighting color arrays
     public static final float[] R_VALUES = {
-        0.536f, // 135/255.0f (Final daylight)
+        
         0.000f, 0.000f, 0.000f, 0.000f, 0.000f, 0.000f, 0.000f, 0.000f, 0.000f, 0.000f,
         0.012f, 0.027f, 0.043f, 0.059f, 0.075f, 0.090f, 0.106f, 0.122f, 0.137f, 0.153f, 
         0.169f, 0.184f, 0.200f, 0.216f, 0.231f, 0.247f, 0.263f, 0.278f, 0.294f, 0.310f, 
